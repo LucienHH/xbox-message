@@ -1,22 +1,19 @@
-import { AxiosRequestConfig, default as axios } from 'axios'
-
 import { ConversationType, XboxMessage } from '.'
 import { GatewayChannelGroupMessage, GatewayContentParts } from './ws'
 
-type RequestHeaders = {
-  [x: string]: string | boolean | number | undefined;
-}
+type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+
+type RequestUrl = string | URL;
 
 type MethodRequestConfig = {
   relyingParty?: string,
   contractVersion?: string,
-  params?: AxiosRequestConfig['params'],
-  data?: AxiosRequestConfig['data'],
-  headers?: RequestHeaders,
+  data?: unknown,
+  headers?: HeadersInit,
 };
 
 type RequestConfig = MethodRequestConfig & {
-  url: string,
+  url: RequestUrl,
 };
 
 export interface APIGroup {
@@ -277,7 +274,7 @@ export interface RestGetProfileSettingsResponse {
   profileUsers: {
     id: string;
     hostId: string;
-    settings: any[];
+    settings: unknown[];
     isSponsoredUser: boolean;
   }[];
 }
@@ -292,19 +289,19 @@ export class Rest {
 
   }
 
-  async post<T>(url: string, config: MethodRequestConfig = {}): Promise<T> {
+  async post<T>(url: RequestUrl, config: MethodRequestConfig = {}): Promise<T> {
     return this.request('POST', { url, ...config })
   }
 
-  async put<T>(url: string, config: MethodRequestConfig = {}): Promise<T> {
+  async put<T>(url: RequestUrl, config: MethodRequestConfig = {}): Promise<T> {
     return this.request('PUT', { url, ...config })
   }
 
-  async get<T>(url: string, config: MethodRequestConfig = {}): Promise<T> {
+  async get<T>(url: RequestUrl, config: MethodRequestConfig = {}): Promise<T> {
     return this.request('GET', { url, ...config })
   }
 
-  async delete<T>(url: string, config: MethodRequestConfig = {}): Promise<T> {
+  async delete<T>(url: RequestUrl, config: MethodRequestConfig = {}): Promise<T> {
     return this.request('DELETE', { url, ...config })
   }
 
@@ -343,7 +340,11 @@ export class Rest {
   }
 
   async getConversation(conversationType: 'OneToOne' | 'Group', conversationId: string) {
-    return this.get<RestGetConversationResponse>(`https://xblmessaging.xboxlive.com/network/xbox/users/me/conversations/${conversationType}/${conversationId}?maxItems=10000`)
+    const url = new URL(`https://xblmessaging.xboxlive.com/network/xbox/users/me/conversations/${conversationType}/${conversationId}`)
+
+    url.searchParams.set('maxItems', '10000')
+
+    return this.get<RestGetConversationResponse>(url)
   }
 
   async getGroups() {
@@ -392,30 +393,42 @@ export class Rest {
     })
   }
 
-  private async request(method: 'GET' | 'POST' | 'PUT' | 'DELETE', config: RequestConfig) {
+  private async request<T>(method: RequestMethod, config: RequestConfig): Promise<T> {
 
     const relyingParty = config.relyingParty || 'http://xboxlive.com'
 
     const auth = await this.client.authflow.getXboxToken(relyingParty)
 
-    const payload = {
+    const headers = new Headers(config.headers)
+
+    headers.set('authorization', `XBL3.0 x=${auth.userHash};${auth.XSTSToken}`)
+    headers.set('x-xbl-contract-version', config.contractVersion || '2')
+    headers.set('accept-language', 'en-US')
+    headers.set('x-xbl-clientseqnum', `${this.client.ws.sequenceId}`)
+
+    const body = typeof config.data === 'undefined' ? undefined : JSON.stringify(config.data)
+
+    if (body && !headers.has('content-type')) headers.set('content-type', 'application/json')
+
+    const response = await fetch(config.url, {
       method,
-      url: config.url,
-      headers: {
-        'authorization': `XBL3.0 x=${auth.userHash};${auth.XSTSToken}`,
-        'x-xbl-contract-version': config.contractVersion || '2',
-        'accept-language': 'en-US',
-        'x-xbl-clientseqnum': `${this.client.ws.sequenceId}`,
-        ...config.headers,
-      } as RequestHeaders,
-      data: undefined,
-      params: undefined,
+      headers,
+      body,
+    })
+
+    const responseBody = await response.text()
+
+    if (!response.ok) {
+      const message = responseBody
+        ? `Request failed with status ${response.status} ${response.statusText}: ${responseBody}`
+        : `Request failed with status ${response.status} ${response.statusText}`
+
+      throw new Error(message)
     }
 
-    if (config.params) payload.params = config.params
-    if (config.data) payload.data = config.data
+    if (!responseBody) return undefined as T
 
-    return axios(payload).then(e => e.data)
+    return JSON.parse(responseBody) as T
 
   }
 

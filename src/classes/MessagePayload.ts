@@ -1,4 +1,3 @@
-import { default as axios } from 'axios'
 import { XboxMessage } from '..'
 
 import { APIImagePart } from './Parts/ImagePart'
@@ -91,10 +90,13 @@ export class MessagePayload {
   async resolveFile(resource: { data: Buffer; fileType: 'png' | 'jpg' | 'wav' | 'silk' | 'gif' | 'aac' }) {
 
     const { uploadUri, attachmentId } = await this.client.rest.getUploadUrl(resource.fileType)
+    const uploadBody = new Uint8Array(resource.data.byteLength)
 
-    const upload = await axios(uploadUri, {
+    uploadBody.set(resource.data)
+
+    const upload = await fetch(uploadUri, {
       method: 'PUT',
-      data: resource.data,
+      body: uploadBody,
       headers: {
         'x-ms-blob-type': 'BlockBlob',
         'x-xbl-contract-version': '3',
@@ -102,13 +104,22 @@ export class MessagePayload {
       },
     })
 
+    if (!upload.ok) {
+      const responseBody = await upload.text()
+      const message = responseBody
+        ? `Failed to upload attachment: ${upload.status} ${upload.statusText}: ${responseBody}`
+        : `Failed to upload attachment: ${upload.status} ${upload.statusText}`
+
+      throw new Error(message)
+    }
+
     return {
       contentType: 'image',
       version: 0,
       attachmentId,
       filetype: resource.fileType,
       sizeInBytes: resource.data.byteLength,
-      hash: upload.headers['content-md5'],
+      hash: upload.headers.get('content-md5') || '',
       height: 88,
       width: 88,
     }

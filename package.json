@@ -19,9 +19,11 @@
   },
   "author": "LucienHH",
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@discordjs/collection": "^2.1.0",
-    "axios": "^1.7.2",
     "debug": "^4.3.4",
     "prismarine-auth": "^2.3.0",
     "tiny-typed-emitter": "^2.1.0",
