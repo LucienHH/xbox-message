@@ -1,26 +1,26 @@
 {
 	"compilerOptions": {
-		"target": "ES6",
-		"moduleResolution": "Bundler",
-		"module": "esnext",
-		"rootDir": "src",
-		"outDir": "dist",
+		"target": "ESNext",
+		"moduleResolution": "bundler",
+		"module": "CommonJS",
+		"rootDir": "./src",
+		"outDir": "./dist",
 		"strict": true,
 		"sourceMap": false,
 		"alwaysStrict": true,
-		"removeComments": true,
+		"removeComments": false,
 		"noImplicitAny": true,
 		"noUnusedLocals": true,
 		"noImplicitReturns": true,
 		"noUnusedParameters": false,
-		"skipLibCheck": false,
+		"skipLibCheck": true,
 		"esModuleInterop": true,
-		"declaration": true,
+		"declaration": true
 	},
 	"include": [
 		"./src/**/*"
 	],
 	"exclude": [
-		"./node_modules"
+		"node_modules"
 	]
 }
