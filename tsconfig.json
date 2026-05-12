@@ -1,9 +1,10 @@
 {
 	"compilerOptions": {
 		"target": "ES6",
-    "moduleResolution": "Node",
-    "module": "CommonJS",
-		"outDir": "./dist",
+		"moduleResolution": "Bundler",
+		"module": "esnext",
+		"rootDir": "src",
+		"outDir": "dist",
 		"strict": true,
 		"sourceMap": false,
 		"alwaysStrict": true,
@@ -16,6 +17,10 @@
 		"esModuleInterop": true,
 		"declaration": true,
 	},
-	"include": ["./src/**/*"],
-	"exclude": ["./node_modules"]
+	"include": [
+		"./src/**/*"
+	],
+	"exclude": [
+		"./node_modules"
+	]
 }
