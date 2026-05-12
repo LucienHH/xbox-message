@@ -1,6 +1,6 @@
 {
   "name": "xbox-message",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Connect to Xbox's messaging service to send and receive real-time messages",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
